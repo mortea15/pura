@@ -9,6 +9,9 @@ from requests.exceptions import HTTPError
 import pura.helpers.regex as REGEX
 from pura.helpers.logger import rootLogger as logger
 
+# TODO Cache files in temp dir
+CACHE_FILES = bool(int(os.getenv('CACHE_THREAT_FEEDS', '1')))
+
 FEEDS = {
     'plain': [
         'https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt',    # IPsum suspicious/malicious hosts
@@ -190,52 +193,79 @@ def __is_in_feed(host, feed):
     return False, 0.0
 
 
-def is_threat(host):
+def is_threat(hosts):
     """Check whether a host is present in selected threat intelligence sources
 
         Parameters
         ----------
-        host : string
-            An IP address, FQDN or URL to look for.
+        hosts : list
+            A list of IP addresses, FQDNs and/or URLs to look for.
 
         Returns
         -------
-        found : bool
-            Whether the host was found.
-        confidence : float
-            A confidence level from 0.0 to 1.0.
-        feed_url : string
-            The URL of the threat intel where the host was found.
+        results : list
+            A list of objects in the following format:
+                { 'host': string, 'found': bool, 'confidence': float, 'feed_url': string }
+                host : string
+                    The hostname (IP, FQDN or URL)
+                found : bool
+                    Whether the host was found.
+                confidence : float
+                    A confidence level from 0.0 to 1.0.
+                feed_url : string
+                    The URL of the threat intel where the host was found.
     """
-    found = False
-    confidence = 0.0
-    feed_url = None
-    host = host.strip()
+    results = []
+
+    logger.info(f'[TH-INT] Checking host {len(hosts)} against threat intel feeds.')
+    
     for feed_url in FEEDS['plain']:
+        if len(results) == len(hosts):
+            return results
         feed = __fetch_feed(feed_url)
         if feed:
-            found, confidence = __is_in_feed(host, feed)
-            if found:
-                return found, confidence, feed_url
+            for host in hosts:
+                found = False
+                host = host.strip()
+                found, confidence = __is_in_feed(host, feed)
+                if found:
+                    results.append({ 'host': host, 'found': found, 'confidence': confidence, 'feed_url': feed_url })
+                    break
+        else:
+            logger.error(f'[TH-INT] Feed for {feed_url} is None or empty. Skipping.')
     for feed_url in FEEDS['csv']:
+        if len(results) == len(hosts):
+            return results
         feed = __fetch_feed(feed_url)
         if feed:
             feed = __parse_csv(feed)
-            found, confidence = __is_in_feed(host, feed)
-            if found:
-                return found, confidence, feed_url
-    return found, confidence, feed_url
+            if feed:
+                for host in hosts:
+                    found = False
+                    host = host.strip()
+                    found, confidence = __is_in_feed(host, feed)
+                    if found:
+                        results.append({ 'host': host, 'found': found, 'confidence': confidence, 'feed_url': feed_url })
+                        break
+            else:
+                logger.error(f'[TH-INT] No feed was returned from parsing the CSV.')
+        else:
+            logger.error(f'[TH-INT] Feed for {feed_url} is None or empty. Skipping.')
+    return results
 
 
 def main():
     if len(sys.argv) > 1:
-        host = sys.argv[1]
-        logger.info(f'[TH-INT] Checking host {host} against threat intel FEEDS.')
-        found, confidence, feed_url = is_threat(host)
-        if found:
-            logger.debug(f'[TH-INT] From feed: {feed_url}')
-        print(f'Threat: {"true" if found else "false"}')
-        print(f'Confidence: {confidence}')
+        hosts = sys.argv[1]
+        hosts = hosts.split(',')
+        results = is_threat(hosts)
+        if results:
+            for result in results:
+                logger.debug(f'[TH-INT] From feed: {result["feed_url"]}')
+                print(f'Host: {result["host"]}')
+                print(f'Threat: {"true" if result["found"] else "false"}')
+                print(f'Confidence: {result["confidence"]}')
+                print()
     else:
         logger.error(f'[TH-INT] Missing argument for `host`')
         print('Please specify a host to look for as the first argument.')
