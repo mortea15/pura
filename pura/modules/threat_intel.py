@@ -11,6 +11,7 @@ from pura.helpers.logger import rootLogger as logger
 
 # TODO Cache files in temp dir
 CACHE_FILES = bool(int(os.getenv('CACHE_THREAT_FEEDS', '1')))
+CACHE_HRS = int(os.getenv('CACHE_THREAT_FEEDS_HRS', '24'))
 
 FEEDS = {
     'plain': [
