@@ -29,9 +29,9 @@ def __get_fqdn(host):
         if o.netloc:
             return o.netloc
         else:
-            logger.warning('No netloc found in host.')
+            logger.warning('[TH-INT] No netloc found in host.')
     except ValueError as e:
-        logger.error(f'An error occurred while parsing a host.')
+        logger.error(f'[TH-INT] An error occurred while parsing a host.')
         logger.error(e)
 
     return host
@@ -42,12 +42,12 @@ def __get_fqdn_path(host):
         o = urlparse(host)
         if o.netloc:
             if not o.path:
-                logger.warning('No path found in host.')
+                logger.warning('[TH-INT] No path found in host.')
             return f'{o.netloc}{o.path}'
         else:
-            logger.warning('No netloc found in host.')
+            logger.warning('[TH-INT] No netloc found in host.')
     except ValueError as e:
-        logger.error(f'An error occurred while parsing a host.')
+        logger.error(f'[TH-INT] An error occurred while parsing a host.')
         logger.error(e)
 
     return host
@@ -81,9 +81,9 @@ def __fetch_feed(feed):
             res = session.get(feed)
             res.raise_for_status()
         except HTTPError as http_err:
-            logger.error(f'HTTP error while fetching a feed\n{http_err}')
+            logger.error(f'[TH-INT] HTTP error while fetching a feed\n{http_err}')
         except Exception as err:
-            logger.error(f'An error occurred while fetching a feed\n{err}')
+            logger.error(f'[TH-INT] An error occurred while fetching a feed\n{err}')
     if res and res.text:
         try:
             return res.text.split('\n')
@@ -105,7 +105,7 @@ def __parse_csv(response):
                     try:
                         index = headers.index('ip')
                     except ValueError:
-                        logger.error(f'Unable to find either [url, ip] in headers of CSV. Returning empty list.')
+                        logger.error(f'[TH-INT] Unable to find either [url, ip] in headers of CSV. Returning empty list.')
                         return hosts
 
                 for line in response:
@@ -118,11 +118,11 @@ def __parse_csv(response):
                     except IndexError:
                         pass
             else:
-                logger.error('Response is not of expected type `list`. Returning empty list.')
+                logger.error('[TH-INT] Response is not of expected type `list`. Returning empty list.')
         except Exception as e:
             logger.error(e)
     else:
-        logger.error('Response is empty. No CSV to parse.')
+        logger.error('[TH-INT] Response is empty. No CSV to parse.')
 
     return hosts
 
@@ -149,19 +149,19 @@ def __is_in_feed(host, feed):
     feed = __strip_feed(feed)
     if __is_ip(host):
         if host in feed:
-            logger.debug(f'Host {host} found in feed (src: IP, exact)')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: IP, exact)')
             return True, 1.0
     if __is_url(host):
         fqdn_path = __get_fqdn_path(host)
         if fqdn_path in feed:
-            logger.debug(f'Host {host} found in feed (src: FQDN/path, exact)')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: FQDN/path, exact)')
             return True, 1.0
         fqdn = __get_fqdn(host)
         if fqdn in feed:
-            logger.debug(f'Host {host} found in feed (src: FQDN, exact)')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: FQDN, exact)')
             return True, 1.0
     if host in feed:
-        logger.debug(f'Host {host} found in feed (src: full, exact)')
+        logger.debug(f'[TH-INT] Host {host} found in feed (src: full, exact)')
         return True, 1.0
 
     # No direct match, look deeper.
@@ -171,20 +171,20 @@ def __is_in_feed(host, feed):
         fqdn_path = __get_fqdn_path(host)
         match = [line for line in feed if fqdn_path in line]
         if match:
-            logger.debug(f'Host {host} found in feed (src: FQDN/path, partial) [match: {match}]')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: FQDN/path, partial) [match: {match}]')
             return True, 0.9
         fqdn = __get_fqdn(host)
         match = [line for line in feed if fqdn in line]
         if match:
-            logger.debug(f'Host {host} found in feed (src: FQDN, partial) [match: {match}]')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: FQDN, partial) [match: {match}]')
             return True, 0.6
     if __is_ip(host):
         match = [line for line in feed if host in line]
         if match:
-            logger.debug(f'Host {host} found in feed (src: IP, partial) [match: {match}]')
+            logger.debug(f'[TH-INT] Host {host} found in feed (src: IP, partial) [match: {match}]')
             return True, 0.6
     if match:
-        logger.debug(f'Host {host} found in feed (src: full, partial) [match: {match}]')
+        logger.debug(f'[TH-INT] Host {host} found in feed (src: full, partial) [match: {match}]')
         return True, 0.7
 
     return False, 0.0
@@ -230,14 +230,14 @@ def is_threat(host):
 def main():
     if len(sys.argv) > 1:
         host = sys.argv[1]
-        logger.info(f'Checking host {host} against threat intel FEEDS.')
+        logger.info(f'[TH-INT] Checking host {host} against threat intel FEEDS.')
         found, confidence, feed_url = is_threat(host)
         if found:
-            logger.debug(f'From feed: {feed_url}')
+            logger.debug(f'[TH-INT] From feed: {feed_url}')
         print(f'Threat: {"true" if found else "false"}')
         print(f'Confidence: {confidence}')
     else:
-        logger.error(f'Missing argument for `host`')
+        logger.error(f'[TH-INT] Missing argument for `host`')
         print('Please specify a host to look for as the first argument.')
 
 
