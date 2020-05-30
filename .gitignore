@@ -142,5 +142,6 @@ stanford_ner/
 
 classifier
 *.pkl
+*.p
 *.db
 *.out
