@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .pura import is_threat, create_issue, add_comment_user_notified
+from .pura import is_threat, create_issue, add_comment_user_notified, fetch_emails, classify, handle_event
