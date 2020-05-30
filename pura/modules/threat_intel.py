@@ -176,7 +176,7 @@ def __is_in_feed(host, feed):
         match = [line for line in feed if fqdn_path in line]
         if match:
             logger.debug(f'[TH-INT] Host {host} found in feed (src: FQDN/path, partial) [match: {match}]')
-            return True, 0.9
+            return True, 0.8
         fqdn = __get_fqdn(host)
         match = [line for line in feed if fqdn in line]
         if match:
