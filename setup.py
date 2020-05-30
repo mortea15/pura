@@ -6,7 +6,7 @@ __contact__ = 'm.amundsen@sportradar.com'
 
 from setuptools import find_packages, setup
 
-version = '0.0.1'
+version = '0.0.2'
 long_desc = '''PURA -- Processes User Reports Automatically
 
 PURA is a system to help with the processing of user incident reports
@@ -42,8 +42,7 @@ requires = [
     'scikit-learn',
     'tqdm',
     'pandas',
-    'numpy',
-    'diffprivlib'
+    'numpy'
 ]
 
 ext_deps = [
